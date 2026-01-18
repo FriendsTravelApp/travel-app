@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Premium Fund Ledger (₹)</title>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #7c3aed;
+            --success: #059669;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --border: #000000;
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+        body { margin: 0; background: #f0f2f5; height: 100vh; overflow: hidden; color: #000; }
+
+        /* Mobile Container: No Scrolling on Body */
+        #app { height: 100vh; display: flex; flex-direction: column; }
+        
+        header { 
+            background: linear-gradient(135deg, var(--primary), var(--secondary)); 
+            color: white; padding: 15px; text-align: center; border-bottom: 3px solid var(--border);
+        }
+
+        .tab-container { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 90px; }
+
+        /* Navigation */
+        nav { 
+            position: fixed; bottom: 0; width: 100%; background: #fff; 
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            border-top: 4px solid var(--border); height: 75px; z-index: 100;
+        }
+        nav button { border: none; border-right: 1px solid #ddd; background: none; font-weight: bold; font-size: 10px; cursor: pointer; color: var(--primary); }
+        nav button.active { background: var(--primary); color: #fff; }
+
+        /* Cards and Stats */
+        .card { background: white; border: 2px solid var(--border); padding: 12px; margin-bottom: 15px; border-radius: 8px; box-shadow: 4px 4px 0px #000; }
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-box { border: 2px solid var(--border); padding: 10px; border-radius: 6px; text-align: center; color: white; }
+        
+        /* Table Styling */
+        .report-section { margin-top: 25px; }
+        .report-title { font-weight: 900; text-transform: uppercase; margin-bottom: 5px; border-left: 5px solid var(--primary); padding-left: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; background: white; }
+        th, td { border: 2px solid var(--border); padding: 10px 5px; text-align: center; font-weight: bold; font-size: 12px; }
+        th { background: #000 !important; color: #fff !important; }
+
+        /* Functional Colors */
+        .txt-deposit { color: var(--success); }
+        .txt-debt { color: var(--danger); }
+        .txt-repay { color: var(--primary); }
+
+        /* Buttons */
+        button.action-btn { width: 100%; padding: 12px; margin: 5px 0; border: 2px solid #000; font-weight: 900; cursor: pointer; border-radius: 4px; }
+        .btn-blue { background: var(--primary); color: white; }
+        .btn-green { background: var(--success); color: white; }
+        .btn-orange { background: var(--warning); color: white; }
+
+        /* Form Inputs */
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #000; font-size: 16px; font-weight: bold; border-radius: 4px; }
+
+        /* PRINT / PDF OVERRIDE */
+        @media print {
+            nav, header, .no-print, .action-btn { display: none !important; }
+            body { background: white; overflow: visible; }
+            #app { display: block; height: auto; }
+            .tab-container { padding: 0; overflow: visible; }
+            .card { border: 2px solid #000; box-shadow: none; margin-bottom: 30px; }
+            table { border: 2px solid #000 !important; page-break-inside: avoid; }
+            th { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; }
+            td { border: 2px solid #000 !important; color: #000 !important; }
+            .report-title { border-left: 10px solid #000; font-size: 16pt; margin-top: 30px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <header>
+            <h2 style="margin:0; font-size: 1.4rem;">FRIENDSHIP FUND PRO</h2>
+        </header>
+
+        <div class="tab-container" id="content">
+            </div>
+
+        <nav>
+            <button onclick="showTab('dash')" id="tab-dash">HOME</button>
+            <button onclick="showTab('friends')" id="tab-friends">FRIENDS</button>
+            <button onclick="showTab('tx')" id="tab-tx">NEW ENTRY</button>
+            <button onclick="showTab('reports')" id="tab-reports">REPORTS</button>
+        </nav>
+    </div>
+
+    <script>
+        let db;
+        const DB_NAME = "ColorFundDB";
+
+        // Database Init
+        const request = indexedDB.open(DB_NAME, 3);
+        request.onupgradeneeded = (e) => {
+            db = e.target.result;
+            if(!db.objectStoreNames.contains("friends")) db.createObjectStore("friends", { keyPath: "id", autoIncrement: true });
+            if(!db.objectStoreNames.contains("transactions")) db.createObjectStore("transactions", { keyPath: "id", autoIncrement: true });
+        };
+        request.onsuccess = (e) => { db = e.target.result; showTab('dash'); };
+
+        async function showTab(tab) {
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            
+            if(tab === 'dash') renderDashboard();
+            else if(tab === 'friends') renderFriends();
+            else if(tab === 'tx') renderTx();
+            else if(tab === 'reports') renderReports();
+        }
+
+        async function renderDashboard() {
+            const txs = await getAll("transactions");
+            let total = 0, debt = 0;
+            txs.forEach(t => {
+                const amt = parseFloat(t.amount);
+                if(t.type === 'deposit' || t.type === 'repayment') total += amt;
+                if(t.type === 'debt') { total -= amt; debt += amt; }
+                if(t.type === 'repayment') debt -= amt;
+            });
+
+            document.getElementById('content').innerHTML = `
+                <div class="summary-grid">
+                    <div class="stat-box" style="background: var(--success);">
+                        <small>AVAILABLE CASH</small><br><b>₹${total.toLocaleString('en-IN')}</b>
+                    </div>
+                    <div class="stat-box" style="background: var(--danger);">
+                        <small>TOTAL DEBT</small><br><b>₹${debt.toLocaleString('en-IN')}</b>
+                    </div>
+                </div>
+                <div class="card">
+                    <h4 style="margin:0 0 10px 0">QUICK ACTIVITY</h4>
+                    <table>
+                        <thead><tr><th>NAME</th><th>TYPE</th><th>AMOUNT</th></tr></thead>
+                        <tbody>
+                            ${txs.slice(-5).reverse().map(t => `
+                                <tr>
+                                    <td>${t.friendName}</td>
+                                    <td class="txt-${t.type.slice(0,5)}">${t.type.toUpperCase()}</td>
+                                    <td>₹${t.amount}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        async function renderFriends() {
+            const friends = await getAll("friends");
+            document.getElementById('content').innerHTML = `
+                <div class="card">
+                    <label>NEW MEMBER NAME</label>
+                    <input type="text" id="fn" placeholder="Enter name...">
+                    <button class="action-btn btn-blue" onclick="addFriend()">+ REGISTER FRIEND</button>
+                </div>
+                ${friends.map(f => `<div class="card" style="border-left:8px solid var(--secondary)"><b>${f.name}</b></div>`).join('')}
+            `;
+        }
+
+        async function renderTx() {
+            const friends = await getAll("friends");
+            document.getElementById('content').innerHTML = `
+                <div class="card">
+                    <label>WHO?</label>
+                    <select id="t-friend">${friends.map(f => `<option>${f.name}</option>`).join('')}</select>
+                    <label>TRANSACTION TYPE</label>
+                    <select id="t-type">
+                        <option value="deposit" style="color:green">INITIAL/MONTHLY DEPOSIT (+)</option>
+                        <option value="debt" style="color:red">LOAN GIVEN (-)</option>
+                        <option value="repayment" style="color:blue">LOAN REPAYMENT (+)</option>
+                    </select>
+                    <label>AMOUNT (₹)</label>
+                    <input type="number" id="t-amt" placeholder="0.00">
+                    <label>DATE</label>
+                    <input type="date" id="t-date" value="${new Date().toISOString().split('T')[0]}">
+                    <button class="action-btn btn-green" onclick="saveTx()">SUBMIT TO LEDGER</button>
+                </div>
+            `;
+        }
+
+        async function renderReports() {
+            const txs = await getAll("transactions");
+            const initialDeps = txs.filter(t => t.type === 'deposit');
+            const loans = txs.filter(t => t.type === 'debt' || t.type === 'repayment');
+
+            document.getElementById('content').innerHTML = `
+                <div class="no-print">
+                    <button class="action-btn btn-blue" onclick="window.print()">PRINT ALL / DOWNLOAD PDF</button>
+                    <button class="action-btn btn-green" onclick="shareWA('full')">SHARE FULL REPORT (WA)</button>
+                    <hr>
+                </div>
+
+                <div class="report-section">
+                    <div class="report-title">1. Initial Deposits Report</div>
+                    <table>
+                        <thead><tr><th>DATE</th><th>NAME</th><th>AMOUNT</th></tr></thead>
+                        <tbody>
+                            ${initialDeps.map(t => `<tr><td>${t.date}</td><td>${t.friendName}</td><td class="txt-deposit">₹${t.amount}</td></tr>`).join('')}
+                        </tbody>
+                    </table>
+                    <button class="action-btn btn-orange no-print" onclick="shareWA('initial')">Share Deposits Only</button>
+                </div>
+
+                <div class="report-section">
+                    <div class="report-title">2. Loan & Repayment Ledger</div>
+                    <table>
+                        <thead><tr><th>DATE</th><th>NAME</th><th>TYPE</th><th>AMOUNT</th></tr></thead>
+                        <tbody>
+                            ${loans.map(t => `<tr><td>${t.date}</td><td>${t.friendName}</td><td class="txt-${t.type.slice(0,5)}">${t.type.toUpperCase()}</td><td>₹${t.amount}</td></tr>`).join('')}
+                        </tbody>
+                    </table>
+                    <button class="action-btn btn-orange no-print" onclick="shareWA('loans')">Share Loan History</button>
+                </div>
+
+                <div class="report-section">
+                    <div class="report-title">3. Complete Activity Log</div>
+                    <table>
+                        <thead><tr><th>DATE</th><th>NAME</th><th>TYPE</th><th>AMT</th></tr></thead>
+                        <tbody>
+                            ${txs.map(t => `<tr><td>${t.date}</td><td>${t.friendName}</td><td>${t.type[0].toUpperCase()}</td><td>₹${t.amount}</td></tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="card no-print">
+                    <h4>BACKUP TOOLS</h4>
+                    <button onclick="exportData()">EXPORT BACKUP (.JSON)</button>
+                    <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+                    <button onclick="document.getElementById('importFile').click()">IMPORT BACKUP</button>
+                </div>
+            `;
+        }
+
+        // Core Functions
+        async function addFriend() {
+            const name = document.getElementById('fn').value;
+            if(!name) return;
+            const t = db.transaction("friends", "readwrite");
+            t.objectStore("friends").add({ name });
+            t.oncomplete = () => showTab('friends');
+        }
+
+        async function saveTx() {
+            const data = {
+                friendName: document.getElementById('t-friend').value,
+                type: document.getElementById('t-type').value,
+                amount: document.getElementById('t-amt').value,
+                date: document.getElementById('t-date').value
+            };
+            if(!data.amount) return;
+            const t = db.transaction("transactions", "readwrite");
+            t.objectStore("transactions").add(data);
+            t.oncomplete = () => showTab('dash');
+        }
+
+        async function shareWA(type) {
+            const txs = await getAll("transactions");
+            let text = "";
+            
+            if(type === 'initial') {
+                text = "*INITIAL DEPOSITS REPORT*\n";
+                txs.filter(t => t.type === 'deposit').forEach(t => text += `• ${t.friendName}: ₹${t.amount}\n`);
+            } else if(type === 'loans') {
+                text = "*LOAN LEDGER*\n";
+                txs.filter(t => t.type !== 'deposit').forEach(t => text += `• ${t.friendName} | ${t.type.toUpperCase()}: ₹${t.amount}\n`);
+            } else {
+                text = "*FULL FUND ACTIVITY*\n";
+                txs.slice(-15).forEach(t => text += `• ${t.date} | ${t.friendName} | ₹${t.amount}\n`);
+            }
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+        }
+
+        // Data Management
+        async function exportData() {
+            const f = await getAll("friends"); const t = await getAll("transactions");
+            const blob = new Blob([JSON.stringify({f, t})], {type: "application/json"});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); 
+            a.download = `backup_${new Date().getTime()}.json`; a.click();
+        }
+
+        function importData(event) {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const data = JSON.parse(e.target.result);
+                const t1 = db.transaction("friends", "readwrite"); data.f.forEach(item => t1.objectStore("friends").put(item));
+                const t2 = db.transaction("transactions", "readwrite"); data.t.forEach(item => t2.objectStore("transactions").put(item));
+                alert("Imported!"); location.reload();
+            };
+            reader.readAsText(event.target.files[0]);
+        }
+
+        function getAll(storeName) {
+            return new Promise((res) => {
+                const tx = db.transaction(storeName, "readonly");
+                const req = tx.objectStore(storeName).getAll();
+                req.onsuccess = () => res(req.result);
+            });
+        }
+    </script>
+</body>
+</html>
