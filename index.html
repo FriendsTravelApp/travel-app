@@ -1,311 +1,633 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Premium Fund Ledger (₹)</title>
-    <style>
-        :root {
-            --primary: #1e3a8a;
-            --secondary: #7c3aed;
-            --success: #059669;
-            --danger: #dc2626;
-            --warning: #d97706;
-            --border: #000000;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Expense Pro - Ultra Visible</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+function openDayModal(){document.getElementById('dayModal').style.display='block';document.getElementById('day-modal-body').innerHTML=document.getElementById('day-summary').innerHTML}
+function closeDayModal(){document.getElementById('dayModal').style.display='none'}
+function openRemModal(){document.getElementById('remModal').style.display='block';document.getElementById('rem-modal-body').innerHTML=document.getElementById('rem-list').innerHTML}
+function closeRemModal(){document.getElementById('remModal').style.display='none'}
 
-        * { box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
-        body { margin: 0; background: #f0f2f5; height: 100vh; overflow: hidden; color: #000; }
 
-        /* Mobile Container: No Scrolling on Body */
-        #app { height: 100vh; display: flex; flex-direction: column; }
-        
-        header { 
-            background: linear-gradient(135deg, var(--primary), var(--secondary)); 
-            color: white; padding: 15px; text-align: center; border-bottom: 3px solid var(--border);
-        }
+function getMonthKey(dateStr){
+  const d = new Date(dateStr);
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,'0');
+}
 
-        .tab-container { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 90px; }
+function getCurrentMonthKey(){
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,'0');
+}
 
-        /* Navigation */
-        nav { 
-            position: fixed; bottom: 0; width: 100%; background: #fff; 
-            display: grid; grid-template-columns: repeat(4, 1fr);
-            border-top: 4px solid var(--border); height: 75px; z-index: 100;
-        }
-        nav button { border: none; border-right: 1px solid #ddd; background: none; font-weight: bold; font-size: 10px; cursor: pointer; color: var(--primary); }
-        nav button.active { background: var(--primary); color: #fff; }
 
-        /* Cards and Stats */
-        .card { background: white; border: 2px solid var(--border); padding: 12px; margin-bottom: 15px; border-radius: 8px; box-shadow: 4px 4px 0px #000; }
-        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .stat-box { border: 2px solid var(--border); padding: 10px; border-radius: 6px; text-align: center; color: white; }
-        
-        /* Table Styling */
-        .report-section { margin-top: 25px; }
-        .report-title { font-weight: 900; text-transform: uppercase; margin-bottom: 5px; border-left: 5px solid var(--primary); padding-left: 10px; }
-        
-        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; background: white; }
-        th, td { border: 2px solid var(--border); padding: 10px 5px; text-align: center; font-weight: bold; font-size: 12px; }
-        th { background: #000 !important; color: #fff !important; }
 
-        /* Functional Colors */
-        .txt-deposit { color: var(--success); }
-        .txt-debt { color: var(--danger); }
-        .txt-repay { color: var(--primary); }
+</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+function openDayModal(){document.getElementById('dayModal').style.display='block';document.getElementById('day-modal-body').innerHTML=document.getElementById('day-summary').innerHTML}
+function closeDayModal(){document.getElementById('dayModal').style.display='none'}
+function openRemModal(){document.getElementById('remModal').style.display='block';document.getElementById('rem-modal-body').innerHTML=document.getElementById('rem-list').innerHTML}
+function closeRemModal(){document.getElementById('remModal').style.display='none'}
 
-        /* Buttons */
-        button.action-btn { width: 100%; padding: 12px; margin: 5px 0; border: 2px solid #000; font-weight: 900; cursor: pointer; border-radius: 4px; }
-        .btn-blue { background: var(--primary); color: white; }
-        .btn-green { background: var(--success); color: white; }
-        .btn-orange { background: var(--warning); color: white; }
 
-        /* Form Inputs */
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #000; font-size: 16px; font-weight: bold; border-radius: 4px; }
+function getMonthKey(dateStr){
+  const d = new Date(dateStr);
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,'0');
+}
 
-        /* PRINT / PDF OVERRIDE */
-        @media print {
-            nav, header, .no-print, .action-btn { display: none !important; }
-            body { background: white; overflow: visible; }
-            #app { display: block; height: auto; }
-            .tab-container { padding: 0; overflow: visible; }
-            .card { border: 2px solid #000; box-shadow: none; margin-bottom: 30px; }
-            table { border: 2px solid #000 !important; page-break-inside: avoid; }
-            th { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; }
-            td { border: 2px solid #000 !important; color: #000 !important; }
-            .report-title { border-left: 10px solid #000; font-size: 16pt; margin-top: 30px; }
-        }
-    </style>
+function getCurrentMonthKey(){
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,'0');
+}
+
+
+
+</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js">
+function openDayModal(){document.getElementById('dayModal').style.display='block';document.getElementById('day-modal-body').innerHTML=document.getElementById('day-summary').innerHTML}
+function closeDayModal(){document.getElementById('dayModal').style.display='none'}
+function openRemModal(){document.getElementById('remModal').style.display='block';document.getElementById('rem-modal-body').innerHTML=document.getElementById('rem-list').innerHTML}
+function closeRemModal(){document.getElementById('remModal').style.display='none'}
+
+
+function getMonthKey(dateStr){
+  const d = new Date(dateStr);
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,'0');
+}
+
+function getCurrentMonthKey(){
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,'0');
+}
+
+
+
+</script>
+  <style>
+    :root {
+      --bg: #fdfbf7; --emerald: #064e3b; --gold: #b45309; --gold-light: #fef3c7;
+      --card: #ffffff; --text: #000000; --danger: #b91c1c; --success: #047857;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { 
+      margin: 0; padding: 12px; background: var(--bg); color: var(--text); 
+      font-family: 'Inter', sans-serif; font-weight: 800; line-height: 1.2;
+    }
+    
+    header { 
+      display: flex; justify-content: space-between; align-items: center; 
+      padding: 18px; background: var(--emerald); border-radius: 18px; 
+      margin-bottom: 15px; color: #fff; border: 2.5px solid #000;
+    }
+    .logo { font-weight: 900; font-size: 20px; color: #fbbf24; }
+    .bal-val { font-weight: 900; font-size: 24px; }
+
+    .card { background: var(--card); border-radius: 18px; padding: 18px; margin-bottom: 18px; border: 2.5px solid #000; box-shadow: 4px 4px 0px #000; }
+    .section-head { 
+      font-size: 15px; font-weight: 900; margin-bottom: 15px; color: var(--emerald); 
+      border-bottom: 4px solid var(--gold-light); padding-bottom: 6px; 
+      display: flex; justify-content: space-between; align-items: center; text-transform: uppercase;
+    }
+
+    label { display: block; font-size: 13px; font-weight: 900; margin-bottom: 5px; color: var(--gold); }
+    input, select { 
+      width: 100%; padding: 14px; border-radius: 12px; border: 2.5px solid #000; 
+      background: #ffffff; color: #000; font-size: 16px; margin-bottom: 15px; 
+      font-weight: 900; outline: none;
+    }
+    
+    button { background: var(--emerald); color: white; border: 2.5px solid #000; font-weight: 900; padding: 16px; border-radius: 12px; cursor: pointer; width: 100%; font-size: 15px; }
+    .btn-sm { width: auto; padding: 8px 14px; font-size: 12px; border-radius: 10px; }
+    .btn-edit { background: #0369a1; }
+    .btn-del { background: var(--danger); }
+    .btn-gold { background: var(--gold); }
+    .btn-view { background: #4f46e5; }
+
+    .row { display: flex; gap: 12px; } .row > div { flex: 1; }
+
+    .day-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px; }
+    .day-box { min-width: 115px; background: #fff; padding: 12px; border-radius: 15px; border: 2.5px solid #000; text-align: center; flex-shrink: 0; }
+    
+    .breakdown-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 2.5px solid #000; }
+    .breakdown-nums { display: flex; gap: 15px; font-size: 16px; }
+
+    .tx-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 2px solid #000; }
+    .tx-info b { font-size: 17px; display: block; color: #000; }
+    .tx-info small { color: #000; font-size: 13px; font-weight: 700; }
+
+    /* Scrolling after 10 transactions */
+    #tx-list { max-height: 700px; overflow-y: auto; }
+
+    .rem-item { padding: 15px; margin-bottom: 12px; border-radius: 15px; border: 3px solid #000; }
+    .rem-paid { background: #e8f5e9; } 
+    .rem-today { background: #fff8e1; } 
+    .rem-overdue { background: #ffebee; }
+
+    /* View Mode Modal */
+    #view-modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8); z-index: 1000; overflow-y: auto; padding: 20px;
+    }
+    .modal-content { background: white; border: 3px solid #000; padding: 20px; border-radius: 15px; max-width: 600px; margin: auto; }
+    .report-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    .report-table th, .report-table td { border: 2px solid #000; padding: 10px; text-align: left; color: #000; }
+    .report-table th { background: #f3f4f6; }
+
+    /* HIDE BUTTONS DURING PRINTING */
+    @media print {
+      .btn-del, .btn-print-action, #view-modal button, header, .card, .no-print {
+        display: none !important;
+      }
+      #view-modal { position: absolute; background: white; padding: 0; }
+      .modal-content { border: none; box-shadow: none; width: 100%; max-width: 100%; }
+    }
+  
+/* Reminder scrolling rules */
+#rem-list{
+  display:flex;
+  gap:12px;
+}
+
+/* Desktop: vertical scroll after 5 */
+@media (min-width: 769px){
+  #rem-list{
+    flex-direction:column;
+    max-height:420px; /* approx height for 5 items */
+    overflow-y:auto;
+  }
+}
+
+/* Mobile: horizontal scroll after 3 */
+@media (max-width: 768px){
+  #rem-list{
+    flex-direction:row;
+    overflow-x:auto;
+    max-width:100%;
+  }
+  .rem-item{
+    min-width:260px;
+    flex-shrink:0;
+  }
+}
+
+
+/* ===== Reminders scrolling FIX ===== */
+#rem-list{
+  display:flex;
+  gap:12px;
+}
+
+/* Desktop: vertical scroll, 5 items visible */
+@media (min-width:769px){
+  #rem-list{
+    flex-direction:column;
+    max-height:520px; /* height for ~5 reminders */
+    overflow-y:auto;
+  }
+}
+
+/* Mobile: horizontal scroll, 3 items visible */
+@media (max-width:768px){
+  #rem-list{
+    flex-direction:row;
+    overflow-x:auto;
+  }
+  .rem-item{
+    min-width:260px;
+    flex-shrink:0;
+  }
+}
+
+</style>
+
+<style>
+.arrow-btn{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;background:#000;color:#fff;border-radius:8px;font-size:14px;padding:0;border:2px solid #000;cursor:pointer;}
+.modal-full{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000c;z-index:3000}
+.modal-box{background:#fff;height:100%;max-width:1000px;margin:auto;padding:15px;overflow:auto}
+.modal-head{position:sticky;top:0;background:#fff;border-bottom:3px solid #000;
+display:flex;justify-content:space-between;align-items:center;padding:10px;z-index:5}
+.month-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
+.cat-table{width:100%;border-collapse:collapse}
+.cat-table th,.cat-table td{border:2px solid #000;padding:10px;text-align:center}
+.rem-scroll{display:flex;gap:12px;overflow-x:auto}
+@media print{
+.arrow-btn,.btn-sm{display:none!important}
+.modal-full{position:absolute;background:#fff}
+}
+
+/* Reminder scrolling rules */
+#rem-list{
+  display:flex;
+  gap:12px;
+}
+
+/* Desktop: vertical scroll after 5 */
+@media (min-width: 769px){
+  #rem-list{
+    flex-direction:column;
+    max-height:420px; /* approx height for 5 items */
+    overflow-y:auto;
+  }
+}
+
+/* Mobile: horizontal scroll after 3 */
+@media (max-width: 768px){
+  #rem-list{
+    flex-direction:row;
+    overflow-x:auto;
+    max-width:100%;
+  }
+  .rem-item{
+    min-width:260px;
+    flex-shrink:0;
+  }
+}
+
+
+/* ===== Reminders scrolling FIX ===== */
+#rem-list{
+  display:flex;
+  gap:12px;
+}
+
+/* Desktop: vertical scroll, 5 items visible */
+@media (min-width:769px){
+  #rem-list{
+    flex-direction:column;
+    max-height:520px; /* height for ~5 reminders */
+    overflow-y:auto;
+  }
+}
+
+/* Mobile: horizontal scroll, 3 items visible */
+@media (max-width:768px){
+  #rem-list{
+    flex-direction:row;
+    overflow-x:auto;
+  }
+  .rem-item{
+    min-width:260px;
+    flex-shrink:0;
+  }
+}
+
+</style>
+
 </head>
 <body>
 
-    <div id="app">
-        <header>
-            <h2 style="margin:0; font-size: 1.4rem;">FRIENDSHIP FUND PRO</h2>
-        </header>
+<header>
+  <div class="logo">Monthly Expense Tracker </div>
+  <div id="top-balance" class="bal-val">₹0.00</div>
+</header>
 
-        <div class="tab-container" id="content">
-            </div>
+<div class="card">
+  <div class="section-head" id="form-title">Add Entry</div>
+  <div class="row">
+      <div><label>Date</label><input type="date" id="tr-date"></div>
+      <div><label>Amount</label><input type="number" step="0.01" id="tr-amount" placeholder="0.00"></div>
+  </div>
+  <div class="row">
+    <div><label>Type</label><select id="tr-type"><option value="expense">Expense (-)</option><option value="income">Income (+)</option></select></div>
+    <div><label>Category</label><select id="tr-cat"><option>General</option><option>Home</option><option>Office</option><option>Personal</option><option>Credit</option><option>Others</option></select></div>
+  </div>
+  <label>Notes</label><input type="text" id="tr-desc" placeholder="Details...">
+  <input type="hidden" id="edit-id">
+  <button onclick="saveTransaction()">SAVE TRANSACTION</button>
+</div>
 
-        <nav>
-            <button onclick="showTab('dash')" id="tab-dash">HOME</button>
-            <button onclick="showTab('friends')" id="tab-friends">FRIENDS</button>
-            <button onclick="showTab('tx')" id="tab-tx">NEW ENTRY</button>
-            <button onclick="showTab('reports')" id="tab-reports">REPORTS</button>
-        </nav>
+<div class="card">
+  <div class="section-head">Report & Exports</div>
+  <div class="row">
+      <div><label>From</label><input type="date" id="range-start" onchange="render()"></div>
+      <div><label>To</label><input type="date" id="range-end" onchange="render()"></div>
+  </div>
+  <label>Category Filter</label>
+  <select id="filter-cat" onchange="render()">
+      <option value="All">All Categories</option>
+      <option>General</option><option>Home</option><option>Office</option><option>Personal</option><option>Credit</option><option>Others</option>
+  </select>
+  <div class="row" style="margin-bottom: 10px;">
+      <button onclick="exportExcel()" style="background:var(--success);">EXCEL</button>
+      <button onclick="exportPDF()" class="btn-gold">PDF</button>
+  </div>
+  <button onclick="openViewMode()" class="btn-view">VIEW CURRENT MONTH</button>
+</div>
+
+<div class="card">
+  <div class="section-head">Day Summary <button class="arrow-btn" onclick="openDayModal()">➜</button></div>
+  <div class="day-scroll" id="day-summary"></div>
+</div>
+
+<div class="card">
+  <div class="section-head">Category Breakdown</div>
+  <table class="cat-table"><thead><tr><th style="background:#e0f2fe">Category</th><th style="background:#e0f2fe;color:var(--success)">Income</th><th style="background:#e0f2fe;color:var(--danger)">Expense</th></tr></thead><tbody id="category-breakdown"></tbody></table>
+</div>
+
+<div class="card">
+  <div class="section-head">Reminders <div><button class="btn-sm btn-gold" onclick="toggleRemForm()">+ NEW</button><span style="display:inline-block;width:8px"></span><button class="arrow-btn" onclick="openRemModal()">➜</button></div></div>
+  <div id="rem-form" style="display:none; padding:15px; border: 2.5px solid #000; border-radius: 15px; margin-bottom: 15px;">
+      <label>Bill Name</label><input type="text" id="rn" placeholder="Electricity">
+      <label>Due Day</label><input type="number" id="rd" placeholder="1-31">
+      <input type="hidden" id="rem-edit-id">
+      <button onclick="saveReminder()" class="btn-gold">SAVE REMINDER</button>
+  </div>
+  <div id="rem-list"></div>
+</div>
+
+<div class="card">
+  <div class="section-head">History</div>
+  <div id="tx-list"></div>
+</div>
+
+<div class="card no-print" style="border: none; background: transparent; box-shadow: none; padding: 0;">
+    <button onclick="exportJSON()" style="background:#000; margin-bottom: 12px;">BACKUP (EXPORT JSON)</button>
+    <button onclick="document.getElementById('imp').click()" style="background:#000;">RESTORE (IMPORT JSON)</button>
+    <input type="file" id="imp" style="display:none" onchange="importJSON(this)">
+</div>
+
+<div id="view-modal">
+    <div class="modal-content">
+        <div class="section-head">Filtered Report <button class="btn-sm btn-del btn-print-action" onclick="closeViewMode()">CLOSE</button></div>
+        <div id="modal-summary" style="margin-bottom: 15px; font-size: 16px;"></div>
+        <table class="report-table">
+            <thead><tr><th>Date</th><th>Note</th><th>Cat</th><th>Amt</th></tr></thead>
+            <tbody id="modal-rows"></tbody>
+        </table>
+        <button onclick="window.print()" class="btn-print-action" style="margin-top: 20px; background: #000;">PRINT THIS REPORT</button>
     </div>
+</div>
 
-    <script>
-        let db;
-        const DB_NAME = "ColorFundDB";
+<script>
+  let db;
+  const req = indexedDB.open("StrictTrackerV5", 1);
+  req.onupgradeneeded = (e) => {
+    db = e.target.result;
+    db.createObjectStore("tx", { keyPath: "id", autoIncrement: true });
+    db.createObjectStore("rem", { keyPath: "id", autoIncrement: true });
+  };
+  req.onsuccess = (e) => { db = e.target.result; setToday(); render(); };
 
-        // Database Init
-        const request = indexedDB.open(DB_NAME, 3);
-        request.onupgradeneeded = (e) => {
-            db = e.target.result;
-            if(!db.objectStoreNames.contains("friends")) db.createObjectStore("friends", { keyPath: "id", autoIncrement: true });
-            if(!db.objectStoreNames.contains("transactions")) db.createObjectStore("transactions", { keyPath: "id", autoIncrement: true });
-        };
-        request.onsuccess = (e) => { db = e.target.result; showTab('dash'); };
+  
+  function setToday() {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    document.getElementById('tr-date').value = `${yyyy}-${mm}-${dd}`;
+  }
 
-        async function showTab(tab) {
-            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-            document.getElementById('tab-' + tab).classList.add('active');
-            
-            if(tab === 'dash') renderDashboard();
-            else if(tab === 'friends') renderFriends();
-            else if(tab === 'tx') renderTx();
-            else if(tab === 'reports') renderReports();
-        }
 
-        async function renderDashboard() {
-            const txs = await getAll("transactions");
-            let total = 0, debt = 0;
-            txs.forEach(t => {
-                const amt = parseFloat(t.amount);
-                if(t.type === 'deposit' || t.type === 'repayment') total += amt;
-                if(t.type === 'debt') { total -= amt; debt += amt; }
-                if(t.type === 'repayment') debt -= amt;
-            });
+  function getFilteredData(callback) {
+    const start = document.getElementById('range-start').value;
+    const end = document.getElementById('range-end').value;
+    const fCat = document.getElementById('filter-cat').value;
 
-            document.getElementById('content').innerHTML = `
-                <div class="summary-grid">
-                    <div class="stat-box" style="background: var(--success);">
-                        <small>AVAILABLE CASH</small><br><b>₹${total.toLocaleString('en-IN')}</b>
-                    </div>
-                    <div class="stat-box" style="background: var(--danger);">
-                        <small>TOTAL DEBT</small><br><b>₹${debt.toLocaleString('en-IN')}</b>
-                    </div>
-                </div>
-                <div class="card">
-                    <h4 style="margin:0 0 10px 0">QUICK ACTIVITY</h4>
-                    <table>
-                        <thead><tr><th>NAME</th><th>TYPE</th><th>AMOUNT</th></tr></thead>
-                        <tbody>
-                            ${txs.slice(-5).reverse().map(t => `
-                                <tr>
-                                    <td>${t.friendName}</td>
-                                    <td class="txt-${t.type.slice(0,5)}">${t.type.toUpperCase()}</td>
-                                    <td>₹${t.amount}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }
+    db.transaction("tx").objectStore("tx").getAll().onsuccess = (e) => {
+      let filtered = e.target.result.filter(t => {
+        let dateOk = (!start || t.date >= start) && (!end || t.date <= end);
+        let catOk = (fCat === "All" || t.category === fCat);
+        return dateOk && catOk;
+      }).sort((a,b) => new Date(b.date) - new Date(a.date));
+      callback(filtered);
+    };
+  }
 
-        async function renderFriends() {
-            const friends = await getAll("friends");
-            document.getElementById('content').innerHTML = `
-                <div class="card">
-                    <label>NEW MEMBER NAME</label>
-                    <input type="text" id="fn" placeholder="Enter name...">
-                    <button class="action-btn btn-blue" onclick="addFriend()">+ REGISTER FRIEND</button>
-                </div>
-                ${friends.map(f => `<div class="card" style="border-left:8px solid var(--secondary)"><b>${f.name}</b></div>`).join('')}
-            `;
-        }
+  function saveTransaction() {
+    const d = document.getElementById('tr-date').value, a = parseFloat(document.getElementById('tr-amount').value);
+    const ty = document.getElementById('tr-type').value, c = document.getElementById('tr-cat').value;
+    const ds = document.getElementById('tr-desc').value || c, eid = document.getElementById('edit-id').value;
+    if (!a || !d) return alert("Fill Amount & Date");
+    const s = db.transaction("tx", "readwrite").objectStore("tx");
+    const obj = { date: d, amount: parseFloat(a.toFixed(2)), type: ty, category: c, desc: ds, monthKey: getMonthKey(d) };
+    if (eid) { obj.id = Number(eid); s.put(obj); } else { s.add(obj); }
+    document.getElementById('tr-amount').value = ""; document.getElementById('tr-desc').value = "";
+    document.getElementById('edit-id').value = ""; setToday(); render();
+  }
 
-        async function renderTx() {
-            const friends = await getAll("friends");
-            document.getElementById('content').innerHTML = `
-                <div class="card">
-                    <label>WHO?</label>
-                    <select id="t-friend">${friends.map(f => `<option>${f.name}</option>`).join('')}</select>
-                    <label>TRANSACTION TYPE</label>
-                    <select id="t-type">
-                        <option value="deposit" style="color:green">INITIAL/MONTHLY DEPOSIT (+)</option>
-                        <option value="debt" style="color:red">LOAN GIVEN (-)</option>
-                        <option value="repayment" style="color:blue">LOAN REPAYMENT (+)</option>
-                    </select>
-                    <label>AMOUNT (₹)</label>
-                    <input type="number" id="t-amt" placeholder="0.00">
-                    <label>DATE</label>
-                    <input type="date" id="t-date" value="${new Date().toISOString().split('T')[0]}">
-                    <button class="action-btn btn-green" onclick="saveTx()">SUBMIT TO LEDGER</button>
-                </div>
-            `;
-        }
+  function render() {
+    const today = new Date().getDate();
+    const activeMonth = getCurrentMonthKey();
+    getFilteredData((filtered) => {
+      filtered = filtered.filter(t => (t.monthKey || getMonthKey(t.date)) === activeMonth);
+      let total = 0, dayMap = {}, catMap = {};
+      filtered.forEach(t => {
+        const isInc = t.type === 'income';
+        total += isInc ? t.amount : -t.amount;
+        if (!dayMap[t.date]) dayMap[t.date] = { inc: 0, exp: 0 };
+        dayMap[t.date][isInc ? 'inc' : 'exp'] += t.amount;
+        if (!catMap[t.category]) catMap[t.category] = { inc: 0, exp: 0 };
+        catMap[t.category][isInc ? 'inc' : 'exp'] += t.amount;
+      });
 
-        async function renderReports() {
-            const txs = await getAll("transactions");
-            const initialDeps = txs.filter(t => t.type === 'deposit');
-            const loans = txs.filter(t => t.type === 'debt' || t.type === 'repayment');
+      document.getElementById('top-balance').innerText = `₹${total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      document.getElementById('day-summary').innerHTML = Object.keys(dayMap).sort().reverse().map(d => `
+        <div class="day-box"><b>${d.split('-').reverse().slice(0,2).join('/')}</b>
+          <div style="color:var(--success)">+₹${dayMap[d].inc.toFixed(2)}</div><div style="color:var(--danger)">-₹${dayMap[d].exp.toFixed(2)}</div>
+        </div>`).join('');
 
-            document.getElementById('content').innerHTML = `
-                <div class="no-print">
-                    <button class="action-btn btn-blue" onclick="window.print()">PRINT ALL / DOWNLOAD PDF</button>
-                    <button class="action-btn btn-green" onclick="shareWA('full')">SHARE FULL REPORT (WA)</button>
-                    <hr>
-                </div>
+      document.getElementById('category-breakdown').innerHTML = Object.keys(catMap).map(c=>`<tr><td>${c}</td>`+`<td style="color:var(--success)">+₹${catMap[c].inc.toFixed(2)}</td>`+`<td style="color:var(--danger)">-₹${catMap[c].exp.toFixed(2)}</td></tr>`).join('');
 
-                <div class="report-section">
-                    <div class="report-title">1. Initial Deposits Report</div>
-                    <table>
-                        <thead><tr><th>DATE</th><th>NAME</th><th>AMOUNT</th></tr></thead>
-                        <tbody>
-                            ${initialDeps.map(t => `<tr><td>${t.date}</td><td>${t.friendName}</td><td class="txt-deposit">₹${t.amount}</td></tr>`).join('')}
-                        </tbody>
-                    </table>
-                    <button class="action-btn btn-orange no-print" onclick="shareWA('initial')">Share Deposits Only</button>
-                </div>
+      document.getElementById('tx-list').innerHTML = filtered.map(t => `
+        <div class="tx-item">
+          <div class="tx-info"><b>${t.desc}</b><small>${t.date} • ${t.category}</small>
+            <div style="margin-top:5px;"><span onclick="editTx(${t.id})" style="color:blue">EDIT</span> | <span onclick="delTx(${t.id})" style="color:red">DEL</span></div>
+          </div>
+          <div style="color:${t.type==='income'?'var(--success)':'#000'}; font-size:18px;">₹${t.amount.toFixed(2)}</div>
+        </div>`).join('');
+    });
 
-                <div class="report-section">
-                    <div class="report-title">2. Loan & Repayment Ledger</div>
-                    <table>
-                        <thead><tr><th>DATE</th><th>NAME</th><th>TYPE</th><th>AMOUNT</th></tr></thead>
-                        <tbody>
-                            ${loans.map(t => `<tr><td>${t.date}</td><td>${t.friendName}</td><td class="txt-${t.type.slice(0,5)}">${t.type.toUpperCase()}</td><td>₹${t.amount}</td></tr>`).join('')}
-                        </tbody>
-                    </table>
-                    <button class="action-btn btn-orange no-print" onclick="shareWA('loans')">Share Loan History</button>
-                </div>
+    db.transaction("rem").objectStore("rem").getAll().onsuccess = (e) => {
+      
+    // PRIORITY SORT: overdue -> today/upcoming -> paid
+    let today = new Date().getDate();
+    
+    
+    let reminders = e.target.result.sort((a,b)=>{
+      const p = r => r.done ? 3 : (today > r.day ? 1 : 2);
+      return p(a) - p(b);
+    });
 
-                <div class="report-section">
-                    <div class="report-title">3. Complete Activity Log</div>
-                    <table>
-                        <thead><tr><th>DATE</th><th>NAME</th><th>TYPE</th><th>AMT</th></tr></thead>
-                        <tbody>
-                            ${txs.map(t => `<tr><td>${t.date}</td><td>${t.friendName}</td><td>${t.type[0].toUpperCase()}</td><td>₹${t.amount}</td></tr>`).join('')}
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="card no-print">
-                    <h4>BACKUP TOOLS</h4>
-                    <button onclick="exportData()">EXPORT BACKUP (.JSON)</button>
-                    <input type="file" id="importFile" style="display:none" onchange="importData(event)">
-                    <button onclick="document.getElementById('importFile').click()">IMPORT BACKUP</button>
-                </div>
-            `;
-        }
+    
+    document.getElementById('rem-list').innerHTML = reminders.map(r => {
+      let cls = r.done ? 'rem-paid' : (today > r.day ? 'rem-overdue' : 'rem-today');
+      return `<div class="rem-item ${cls}">
+        <div style="display:flex; justify-content:space-between; align-items:center">
+          <b>${r.name} (Day ${r.day})</b>
+          <button class="btn-sm" style="background:var(--emerald)" onclick="toggleRem(${r.id})">
+            ${r.done?'PAID':'MARK'}
+          </button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn-sm btn-edit" onclick="editRem(${r.id})">Edit</button>
+          <button class="btn-sm btn-del" onclick="delRem(${r.id})">Del</button>
+        </div>
+      </div>`;
+    }).join('');
 
-        // Core Functions
-        async function addFriend() {
-            const name = document.getElementById('fn').value;
-            if(!name) return;
-            const t = db.transaction("friends", "readwrite");
-            t.objectStore("friends").add({ name });
-            t.oncomplete = () => showTab('friends');
-        }
 
-        async function saveTx() {
-            const data = {
-                friendName: document.getElementById('t-friend').value,
-                type: document.getElementById('t-type').value,
-                amount: document.getElementById('t-amt').value,
-                date: document.getElementById('t-date').value
-            };
-            if(!data.amount) return;
-            const t = db.transaction("transactions", "readwrite");
-            t.objectStore("transactions").add(data);
-            t.oncomplete = () => showTab('dash');
-        }
+    };
+  }
 
-        async function shareWA(type) {
-            const txs = await getAll("transactions");
-            let text = "";
-            
-            if(type === 'initial') {
-                text = "*INITIAL DEPOSITS REPORT*\n";
-                txs.filter(t => t.type === 'deposit').forEach(t => text += `• ${t.friendName}: ₹${t.amount}\n`);
-            } else if(type === 'loans') {
-                text = "*LOAN LEDGER*\n";
-                txs.filter(t => t.type !== 'deposit').forEach(t => text += `• ${t.friendName} | ${t.type.toUpperCase()}: ₹${t.amount}\n`);
-            } else {
-                text = "*FULL FUND ACTIVITY*\n";
-                txs.slice(-15).forEach(t => text += `• ${t.date} | ${t.friendName} | ₹${t.amount}\n`);
-            }
-            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
-        }
+  function editTx(id) {
+    db.transaction("tx").objectStore("tx").get(id).onsuccess = (e) => {
+      const t = e.target.result;
+      document.getElementById('tr-date').value = t.date; document.getElementById('tr-amount').value = t.amount;
+      document.getElementById('tr-type').value = t.type; document.getElementById('tr-cat').value = t.category;
+      document.getElementById('tr-desc').value = t.desc; document.getElementById('edit-id').value = t.id;
+      window.scrollTo(0,0);
+    };
+  }
 
-        // Data Management
-        async function exportData() {
-            const f = await getAll("friends"); const t = await getAll("transactions");
-            const blob = new Blob([JSON.stringify({f, t})], {type: "application/json"});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); 
-            a.download = `backup_${new Date().getTime()}.json`; a.click();
-        }
+  function openViewMode() {
+    const activeMonth = getCurrentMonthKey();
+    getFilteredData((filtered) => {
+      filtered = filtered.filter(t => (t.monthKey || getMonthKey(t.date)) === activeMonth);
+      if(filtered.length === 0) return alert("No data for current filters");
+      let inc=0, exp=0;
+      let rows = filtered.map(t => {
+        if(t.type === 'income') inc += t.amount; else exp += t.amount;
+        return `<tr><td>${t.date}</td><td>${t.desc}</td><td>${t.category}</td><td>${t.type==='income'?'+':'-'}₹${t.amount.toFixed(2)}</td></tr>`;
+      }).join('');
+      document.getElementById('modal-summary').innerHTML = `<b>IN: <span style="color:green">₹${inc.toFixed(2)}</span> | OUT: <span style="color:red">₹${exp.toFixed(2)}</span> | Net: ₹${(inc-exp).toFixed(2)}</b>`;
+      document.getElementById('modal-rows').innerHTML = rows;
+      document.getElementById('view-modal').style.display = 'block';
+    });
+  }
 
-        function importData(event) {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const data = JSON.parse(e.target.result);
-                const t1 = db.transaction("friends", "readwrite"); data.f.forEach(item => t1.objectStore("friends").put(item));
-                const t2 = db.transaction("transactions", "readwrite"); data.t.forEach(item => t2.objectStore("transactions").put(item));
-                alert("Imported!"); location.reload();
-            };
-            reader.readAsText(event.target.files[0]);
-        }
+  function closeViewMode() { document.getElementById('view-modal').style.display = 'none'; }
 
-        function getAll(storeName) {
-            return new Promise((res) => {
-                const tx = db.transaction(storeName, "readonly");
-                const req = tx.objectStore(storeName).getAll();
-                req.onsuccess = () => res(req.result);
-            });
-        }
-    </script>
+  function exportPDF() {
+    const start = document.getElementById('range-start').value, end = document.getElementById('range-end').value;
+    const fCat = document.getElementById('filter-cat').value;
+    if (!start || !end) return alert("Select Date Range");
+    const activeMonth = getCurrentMonthKey();
+    getFilteredData((filtered) => {
+      filtered = filtered.filter(t => (t.monthKey || getMonthKey(t.date)) === activeMonth);
+      const { jsPDF } = window.jspdf; const doc = new jsPDF();
+      let inc=0, exp=0;
+      filtered.forEach(t => { if(t.type==='income') inc+=t.amount; else exp+=t.amount; });
+      
+      doc.setFontSize(14);
+      doc.text(`Report: ${start} to ${end} (Cat: ${fCat})`, 14, 15);
+      doc.setFontSize(11);
+      doc.text(`Total Income: Rs. ${inc.toFixed(2)} | Total Expense: Rs. ${exp.toFixed(2)} | Net: Rs. ${(inc-exp).toFixed(2)}`, 14, 22);
+      
+      doc.autoTable({ head:[['Date','Desc','Cat','Type','Amt']], body:filtered.map(t=>[t.date, t.desc, t.category, t.type.toUpperCase(), t.amount.toFixed(2)]), startY: 28 });
+      doc.save(`Expense_Report_${fCat}.pdf`);
+    });
+  }
+
+  function exportExcel() {
+    const start = document.getElementById('range-start').value, end = document.getElementById('range-end').value;
+    const fCat = document.getElementById('filter-cat').value;
+    if(!start || !end) return alert("Select range");
+    const activeMonth = getCurrentMonthKey();
+    getFilteredData((filtered) => {
+      filtered = filtered.filter(t => (t.monthKey || getMonthKey(t.date)) === activeMonth);
+      let inc=0, exp=0;
+      filtered.forEach(t => { if(t.type==='income') inc+=t.amount; else exp+=t.amount; });
+      
+      const cleanData = filtered.map(({id, ...rest}) => {
+          rest.amount = parseFloat(rest.amount.toFixed(2));
+          return rest;
+      });
+      // Add summary row at the end
+      cleanData.push({});
+      cleanData.push({desc: "TOTAL INCOME", amount: parseFloat(inc.toFixed(2))});
+      cleanData.push({desc: "TOTAL EXPENSE", amount: parseFloat(exp.toFixed(2))});
+      cleanData.push({desc: "NET BALANCE", amount: parseFloat((inc-exp).toFixed(2))});
+
+      const ws = XLSX.utils.json_to_sheet(cleanData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Report");
+      XLSX.writeFile(wb, `Report_${fCat}.xlsx`);
+    });
+  }
+
+  function delTx(id) { if(confirm("Delete?")) db.transaction("tx","readwrite").objectStore("tx").delete(id).onsuccess = render; }
+  function toggleRemForm() { const f = document.getElementById('rem-form'); f.style.display = f.style.display==='none'?'block':'none'; }
+  function saveReminder() {
+    const n = document.getElementById('rn').value, d = parseInt(document.getElementById('rd').value), eid = document.getElementById('rem-edit-id').value;
+    if(!n || !d) return alert("Fill Name & Day");
+    const s = db.transaction("rem", "readwrite").objectStore("rem");
+    const obj = { name: n, day: d, done: false };
+    if (eid) { obj.id = Number(eid); s.put(obj); } else { s.add(obj); }
+    document.getElementById('rn').value = ""; document.getElementById('rd').value = ""; toggleRemForm(); render();
+  }
+  function editRem(id) {
+    db.transaction("rem").objectStore("rem").get(id).onsuccess = (e) => {
+      const r = e.target.result; document.getElementById('rn').value = r.name; document.getElementById('rd').value = r.day;
+      document.getElementById('rem-edit-id').value = r.id; toggleRemForm();
+    };
+  }
+  function delRem(id) { if(confirm("Delete Reminder?")) db.transaction("rem","readwrite").objectStore("rem").delete(id).onsuccess = render; }
+  function toggleRem(id) {
+    const s = db.transaction("rem","readwrite").objectStore("rem");
+    s.get(id).onsuccess=(e)=>{ const r=e.target.result; r.done=!r.done; s.put(r).onsuccess=render; };
+  }
+  function exportJSON() {
+    db.transaction("tx").objectStore("tx").getAll().onsuccess=(e)=>{
+      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(e.target.result)], {type:"application/json"}));
+      a.download = "Tracker_Backup.json"; a.click();
+    };
+  }
+  function importJSON(input) {
+    const r = new FileReader(); r.onload = () => {
+      const data = JSON.parse(r.result);
+      const s = db.transaction("tx", "readwrite").objectStore("tx");
+      data.forEach(item => { delete item.id; s.add(item); });
+      render();
+    }; r.readAsText(input.files[0]);
+  }
+
+function openDayModal(){document.getElementById('dayModal').style.display='block';document.getElementById('day-modal-body').innerHTML=document.getElementById('day-summary').innerHTML}
+function closeDayModal(){document.getElementById('dayModal').style.display='none'}
+function openRemModal(){document.getElementById('remModal').style.display='block';document.getElementById('rem-modal-body').innerHTML=document.getElementById('rem-list').innerHTML}
+function closeRemModal(){document.getElementById('remModal').style.display='none'}
+
+
+function getMonthKey(dateStr){
+  const d = new Date(dateStr);
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,'0');
+}
+
+function getCurrentMonthKey(){
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,'0');
+}
+
+
+
+</script>
+
+<div class="modal-full" id="dayModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <b>Monthly Day Summary</b>
+      <div>
+        <button class="btn-sm" onclick="window.print()">PRINT</button>
+        <button class="btn-sm btn-del" onclick="closeDayModal()">CLOSE</button>
+      </div>
+    </div>
+    <div class="month-grid" id="day-modal-body"></div>
+  </div>
+</div>
+
+<div class="modal-full" id="remModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <b>All Reminders</b>
+      <div>
+        <button class="btn-sm" onclick="window.print()">PRINT</button>
+        <button class="btn-sm btn-del" onclick="closeRemModal()">CLOSE</button>
+      </div>
+    </div>
+    <div id="rem-modal-body"></div>
+  </div>
+</div>
+
 </body>
 </html>
